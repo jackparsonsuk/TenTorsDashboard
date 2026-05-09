@@ -603,6 +603,31 @@ body::after {
   gap: 8px;
 }
 
+.modal-share {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.15);
+  border: none;
+  color: var(--accent-blue);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+}
+
+.modal-share:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.modal-share:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .modal-close {
   width: 32px;
   height: 32px;

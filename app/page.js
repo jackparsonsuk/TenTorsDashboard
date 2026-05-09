@@ -417,6 +417,57 @@ function TeamCard({ team, route, onClick, isFavourite, onToggleFavourite }) {
 
 /* ===== TEAM DETAIL MODAL ===== */
 function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite }) {
+  const [isSharing, setIsSharing] = useState(false);
+
+  const shareImage = async () => {
+    setIsSharing(true);
+    
+    const currentCp = team.progress > 0 ? route.checkpoints[team.progress - 1] : 'Start';
+    const nextCp = team.progress < route.checkpoints.length ? route.checkpoints[team.progress] : 'Finish';
+    
+    let lastLegStr = '';
+    if (team.progress > 1) {
+      const prevTime = team.times[team.progress - 2];
+      const currTime = team.times[team.progress - 1];
+      if (prevTime && currTime) {
+        const [ph, pm] = prevTime.split(':').map(Number);
+        const [ch, cm] = currTime.split(':').map(Number);
+        let diff = ch * 60 + cm - (ph * 60 + pm);
+        if (diff < 0) diff += 24 * 60;
+        const hours = Math.floor(diff / 60);
+        const m = diff % 60;
+        lastLegStr = hours > 0 ? `${hours}h ${m}m` : `${m}m`;
+      }
+    }
+
+    const imageUrl = `/api/og?team=${encodeURIComponent(team.name)}&code=${team.code}&route=${route.route}&progress=${team.progress}&total=${team.totalCheckpoints}&status=${team.status}&current=${encodeURIComponent(currentCp)}&next=${encodeURIComponent(nextCp)}&lastLeg=${encodeURIComponent(lastLegStr)}`;
+    
+    try {
+      if (navigator.share) {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `${team.code}-progress.png`, { type: blob.type });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `${team.name} - Ten Tors Progress`,
+            text: `Check out ${team.name}'s progress on the Ten Tors Challenge!`,
+            files: [file],
+          });
+        } else {
+          window.open(imageUrl, '_blank');
+        }
+      } else {
+        window.open(imageUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+      window.open(imageUrl, '_blank');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   // Close on escape
   useEffect(() => {
     const handler = (e) => {
@@ -523,9 +574,14 @@ function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite 
               </span>
             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>
-            ✕
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="modal-share" onClick={shareImage} aria-label="Share Progress" title="Share Progress" disabled={isSharing}>
+              {isSharing ? '⏳' : '📤'}
+            </button>
+            <button className="modal-close" onClick={onClose} aria-label="Close">
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Pace Analysis Toggle */}
