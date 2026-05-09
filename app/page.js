@@ -133,6 +133,16 @@ export default function Dashboard() {
     0
   );
 
+  const campedCount = data?.routes?.reduce(
+    (sum, r) => sum + r.teams.filter((t) => t.status === 'CAMPED').length,
+    0
+  ) || 0;
+
+  const finishedCount = data?.routes?.reduce(
+    (sum, r) => sum + r.teams.filter((t) => t.status === 'FINISHED').length,
+    0
+  ) || 0;
+
   // Loading state
   if (loading && !data) {
     return (
@@ -195,16 +205,18 @@ export default function Dashboard() {
             <span className="stat-value">{data?.teamCount || 0}</span>
             <span className="stat-label">Teams</span>
           </div>
-          <div className="stat-item">
-            <span className="stat-value">
-              {data?.routes?.reduce(
-                (sum, r) =>
-                  sum + r.teams.filter((t) => t.status === 'FINISHED').length,
-                0
-              ) || 0}
-            </span>
-            <span className="stat-label">Finished</span>
-          </div>
+          {finishedCount > 0 && (
+            <div className="stat-item">
+              <span className="stat-value">{finishedCount}</span>
+              <span className="stat-label">Finished</span>
+            </div>
+          )}
+          {campedCount > 0 && (
+            <div className="stat-item">
+              <span className="stat-value">{campedCount}</span>
+              <span className="stat-label">Camped</span>
+            </div>
+          )}
         </div>
       </header>
 
