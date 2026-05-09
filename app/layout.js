@@ -1,5 +1,7 @@
 import './globals.css';
-import TopNav from './components/TopNav';export const metadata = {
+import TopNav from './components/TopNav';
+
+export const metadata = {
   title: 'Ten Tors Dashboard — Live Timings',
   description:
     'Live timing dashboard for the Ten Tors Challenge 2026. Track teams in real-time as they navigate across Dartmoor.',
@@ -20,7 +22,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <TopNav />
+        <div className="global-top-bar">
+          <TopNav />
+        </div>
         {children}
       </body>
     </html>

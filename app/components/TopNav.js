@@ -15,6 +15,9 @@ export default function TopNav() {
         <Link href="/leaderboards" className={`nav-link ${pathname === '/leaderboards' ? 'active' : ''}`}>
           Leaderboards
         </Link>
+        <Link href="/about" className={`nav-link ${pathname === '/about' ? 'active' : ''}`}>
+          About
+        </Link>
       </div>
     </nav>
   );

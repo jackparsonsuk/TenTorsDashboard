@@ -1050,9 +1050,6 @@ body::after {
 
 /* ===== TOP NAVIGATION ===== */
 .top-nav {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   z-index: 200;
 }
 
@@ -1218,4 +1215,44 @@ body::after {
   font-size: 0.65rem;
   color: var(--text-muted);
   text-transform: uppercase;
+}
+
+/* ===== GLOBAL TOP BAR ===== */
+.global-top-bar {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px 16px 0;
+  position: relative;
+  z-index: 200;
+}
+
+/* ===== KO-FI BUTTON ===== */
+.kofi-button {
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+}
+
+.kofi-button:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.kofi-icon {
+  font-size: 1rem;
 }
