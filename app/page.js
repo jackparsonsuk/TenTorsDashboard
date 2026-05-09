@@ -431,17 +431,57 @@ function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite 
 
   const statusClass = team.status.toLowerCase().replace('_', '-');
 
-  // Calculate leg durations
-  function calcLegDuration(prevTime, currTime) {
+  // Calculate leg duration in minutes (raw)
+  function calcLegMinutes(prevTime, currTime) {
     if (!prevTime || !currTime) return null;
     const [ph, pm] = prevTime.split(':').map(Number);
     const [ch, cm] = currTime.split(':').map(Number);
     let diff = ch * 60 + cm - (ph * 60 + pm);
-    if (diff < 0) diff += 24 * 60; // handle day rollover
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
+    if (diff < 0) diff += 24 * 60;
+    return diff;
+  }
+
+  function formatMinutes(mins) {
+    if (mins == null) return '—';
+    const hours = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (hours > 0) return `${hours}h ${m}m`;
+    return `${m}m`;
+  }
+
+  // Build leg data for pace analysis
+  const legs = [];
+  for (let i = 1; i < route.checkpoints.length; i++) {
+    const mins = calcLegMinutes(team.times[i - 1], team.times[i]);
+    if (mins !== null) {
+      legs.push({
+        from: route.checkpoints[i - 1],
+        to: route.checkpoints[i],
+        minutes: mins,
+      });
+    }
+  }
+
+  const avgPace = legs.length > 0
+    ? Math.round(legs.reduce((s, l) => s + l.minutes, 0) / legs.length)
+    : null;
+
+  const totalElapsed = calcLegMinutes(team.times[0], team.times[team.progress - 1]);
+
+  const maxLegMinutes = legs.length > 0 ? Math.max(...legs.map(l => l.minutes)) : 1;
+
+  // Pace trend: compare first half avg vs second half avg
+  let paceTrend = null;
+  if (legs.length >= 4) {
+    const mid = Math.floor(legs.length / 2);
+    const firstHalf = legs.slice(0, mid);
+    const secondHalf = legs.slice(mid);
+    const firstAvg = firstHalf.reduce((s, l) => s + l.minutes, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((s, l) => s + l.minutes, 0) / secondHalf.length;
+    const diff = secondAvg - firstAvg;
+    if (diff > 5) paceTrend = 'slowing';
+    else if (diff < -5) paceTrend = 'speeding';
+    else paceTrend = 'steady';
   }
 
   return (
@@ -476,6 +516,79 @@ function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite 
           </button>
         </div>
 
+        {/* Pace Analysis Toggle */}
+        {legs.length > 0 && (
+          <div className="pace-section">
+            <button
+              className="pace-toggle-btn"
+              onClick={() => {
+                const panel = document.getElementById(`pace-${team.code}`);
+                panel.classList.toggle('open');
+              }}
+            >
+              📊 Pace Analysis
+              <span className="pace-toggle-summary">
+                {formatMinutes(avgPace)} avg
+                {paceTrend && (
+                  <span className={`pace-trend-${paceTrend}`}>
+                    {' '}{paceTrend === 'slowing' ? '↘' : paceTrend === 'speeding' ? '↗' : '→'}
+                  </span>
+                )}
+              </span>
+            </button>
+            <div id={`pace-${team.code}`} className="pace-panel collapsible">
+              <div className="pace-stats">
+                <div className="pace-stat">
+                  <span className="pace-stat-value">{formatMinutes(avgPace)}</span>
+                  <span className="pace-stat-label">Avg per leg</span>
+                </div>
+                <div className="pace-stat">
+                  <span className="pace-stat-value">{formatMinutes(totalElapsed)}</span>
+                  <span className="pace-stat-label">Total time</span>
+                </div>
+                <div className="pace-stat">
+                  <span className="pace-stat-value">{legs.length}</span>
+                  <span className="pace-stat-label">Legs done</span>
+                </div>
+                {paceTrend && (
+                  <div className="pace-stat">
+                    <span className={`pace-stat-value pace-trend-${paceTrend}`}>
+                      {paceTrend === 'slowing' ? '↘' : paceTrend === 'speeding' ? '↗' : '→'}
+                    </span>
+                    <span className="pace-stat-label">
+                      {paceTrend === 'slowing' ? 'Slowing' : paceTrend === 'speeding' ? 'Faster' : 'Steady'}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="pace-bars">
+                {legs.map((leg, i) => {
+                  const pct = (leg.minutes / maxLegMinutes) * 100;
+                  const isSlow = leg.minutes > avgPace * 1.3;
+                  const isFast = leg.minutes < avgPace * 0.7;
+                  return (
+                    <div key={i} className="pace-bar-row">
+                      <span className="pace-bar-label" title={`${leg.from} → ${leg.to}`}>
+                        {leg.to.replace(' (via)', '')}
+                      </span>
+                      <div className="pace-bar-track">
+                        <div
+                          className={`pace-bar-fill ${isSlow ? 'slow' : isFast ? 'fast' : ''}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className={`pace-bar-time ${isSlow ? 'slow' : isFast ? 'fast' : ''}`}>
+                        {formatMinutes(leg.minutes)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Timeline */}
         <div className="checkpoint-timeline">
           {route.checkpoints.map((checkpoint, i) => {
@@ -486,7 +599,8 @@ function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite 
             const isVia = checkpoint.toLowerCase().includes('(via)');
 
             const prevTime = i > 0 ? team.times[i - 1] : null;
-            const legDuration = calcLegDuration(prevTime, time);
+            const legMins = calcLegMinutes(prevTime, time);
+            const legStr = formatMinutes(legMins);
 
             let dotClass = '';
             if (status && status.toUpperCase() === 'CAMPED') dotClass = 'camped';
@@ -512,9 +626,9 @@ function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite 
                   {time && (
                     <div className="timeline-time">{time}</div>
                   )}
-                  {legDuration && (
+                  {legMins !== null && (
                     <div className="timeline-leg-duration">
-                      +{legDuration} from previous
+                      +{legStr} from previous
                     </div>
                   )}
                   {status && (

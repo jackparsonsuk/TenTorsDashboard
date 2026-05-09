@@ -744,6 +744,161 @@ body::after {
   color: var(--accent-red);
 }
 
+/* ===== PACE ANALYSIS ===== */
+.pace-section {
+  margin-bottom: 16px;
+}
+
+.pace-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pace-toggle-btn:hover {
+  background: var(--bg-input);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pace-toggle-summary {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.pace-panel.collapsible {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 300ms ease, opacity 200ms ease, padding 200ms ease, margin 200ms ease;
+  padding: 0 16px;
+  margin-top: 0;
+  border: 1px solid transparent;
+}
+
+.pace-panel.collapsible.open {
+  max-height: 600px;
+  opacity: 1;
+  padding: 16px;
+  margin-top: 8px;
+  border-color: var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.pace-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.pace-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pace-stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.pace-stat-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pace-trend-slowing {
+  color: var(--accent-red) !important;
+}
+
+.pace-trend-speeding {
+  color: var(--accent-green) !important;
+}
+
+.pace-trend-steady {
+  color: var(--accent-blue) !important;
+}
+
+.pace-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pace-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pace-bar-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  width: 80px;
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pace-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.pace-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--accent-blue);
+  transition: width var(--transition-slow);
+}
+
+.pace-bar-fill.slow {
+  background: var(--accent-red);
+}
+
+.pace-bar-fill.fast {
+  background: var(--accent-green);
+}
+
+.pace-bar-time {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  width: 42px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pace-bar-time.slow {
+  color: var(--accent-red);
+}
+
+.pace-bar-time.fast {
+  color: var(--accent-green);
+}
+
 /* ===== LOADING / ERROR STATES ===== */
 .loading-container {
   display: flex;
