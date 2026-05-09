@@ -821,6 +821,52 @@ body::after {
   font-size: 0.9rem;
 }
 
+/* ===== FAVOURITES ===== */
+.star-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  padding: 0;
+  line-height: 1;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.star-btn:hover {
+  color: var(--accent-amber);
+  transform: scale(1.15);
+}
+
+.star-btn.active {
+  color: var(--accent-amber);
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+}
+
+.star-btn.modal-star {
+  font-size: 1.3rem;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.team-card.favourited {
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.05);
+}
+
+.fav-chip {
+  background: var(--accent-amber-dim);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: var(--accent-amber);
+}
+
+.fav-chip.active {
+  background: var(--accent-amber);
+  color: var(--text-inverse);
+  border-color: var(--accent-amber);
+}
+
 /* ===== RESPONSIVE ===== */
 @media (min-width: 768px) {
   .app-container {

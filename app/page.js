@@ -4,6 +4,23 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const REFRESH_INTERVAL = 60; // seconds
 const ROUTE_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const FAV_STORAGE_KEY = 'tentors-favourites';
+
+function loadFavourites() {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const stored = localStorage.getItem(FAV_STORAGE_KEY);
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFavourites(favs) {
+  try {
+    localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify([...favs]));
+  } catch {}
+}
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -13,7 +30,27 @@ export default function Dashboard() {
   const [selectedRoute, setSelectedRoute] = useState('ALL');
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [selectedTeam, setSelectedTeam] = useState(null);
+  const [favourites, setFavourites] = useState(new Set());
+  const [showFavourites, setShowFavourites] = useState(false);
   const countdownRef = useRef(REFRESH_INTERVAL);
+
+  // Load favourites from localStorage on mount
+  useEffect(() => {
+    setFavourites(loadFavourites());
+  }, []);
+
+  const toggleFavourite = useCallback((teamCode) => {
+    setFavourites((prev) => {
+      const next = new Set(prev);
+      if (next.has(teamCode)) {
+        next.delete(teamCode);
+      } else {
+        next.add(teamCode);
+      }
+      saveFavourites(next);
+      return next;
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
@@ -60,6 +97,16 @@ export default function Dashboard() {
     // Filter by route
     if (selectedRoute !== 'ALL') {
       routes = routes.filter((r) => r.route === selectedRoute);
+    }
+
+    // Filter by favourites
+    if (showFavourites && favourites.size > 0) {
+      routes = routes
+        .map((route) => ({
+          ...route,
+          teams: route.teams.filter((team) => favourites.has(team.code)),
+        }))
+        .filter((route) => route.teams.length > 0);
     }
 
     // Filter by search
@@ -186,18 +233,25 @@ export default function Dashboard() {
 
         <div className="route-chips">
           <button
-            className={`route-chip ${selectedRoute === 'ALL' ? 'active' : ''}`}
-            onClick={() => setSelectedRoute('ALL')}
+            className={`route-chip fav-chip ${showFavourites ? 'active' : ''}`}
+            onClick={() => setShowFavourites(!showFavourites)}
+          >
+            ⭐ {favourites.size > 0 ? favourites.size : ''}
+          </button>
+          <button
+            className={`route-chip ${!showFavourites && selectedRoute === 'ALL' ? 'active' : ''}`}
+            onClick={() => { setSelectedRoute('ALL'); setShowFavourites(false); }}
           >
             All
           </button>
           {ROUTE_LETTERS.map((letter) => (
             <button
               key={letter}
-              className={`route-chip ${selectedRoute === letter ? 'active' : ''}`}
-              onClick={() =>
-                setSelectedRoute(selectedRoute === letter ? 'ALL' : letter)
-              }
+              className={`route-chip ${!showFavourites && selectedRoute === letter ? 'active' : ''}`}
+              onClick={() => {
+                setShowFavourites(false);
+                setSelectedRoute(selectedRoute === letter ? 'ALL' : letter);
+              }}
             >
               {letter}
             </button>
@@ -206,10 +260,12 @@ export default function Dashboard() {
       </div>
 
       {/* FILTER STATUS */}
-      {(search || selectedRoute !== 'ALL') && (
+      {(search || selectedRoute !== 'ALL' || showFavourites) && (
         <div style={{ padding: '12px 0 0', textAlign: 'center' }}>
           <span className="progress-text">
+            {showFavourites ? '⭐ ' : ''}
             Showing {totalFilteredTeams} team{totalFilteredTeams !== 1 ? 's' : ''}{' '}
+            {showFavourites ? '(favourites)' : ''}{' '}
             {selectedRoute !== 'ALL' ? `on Route ${selectedRoute}` : ''}{' '}
             {search ? `matching "${search}"` : ''}
           </span>
@@ -230,6 +286,8 @@ export default function Dashboard() {
             key={route.route}
             route={route}
             onTeamClick={setSelectedTeam}
+            favourites={favourites}
+            onToggleFavourite={toggleFavourite}
           />
         ))
       )}
@@ -240,6 +298,8 @@ export default function Dashboard() {
           team={selectedTeam.team}
           route={selectedTeam.route}
           onClose={() => setSelectedTeam(null)}
+          isFavourite={favourites.has(selectedTeam.team.code)}
+          onToggleFavourite={toggleFavourite}
         />
       )}
     </div>
@@ -247,7 +307,7 @@ export default function Dashboard() {
 }
 
 /* ===== ROUTE SECTION ===== */
-function RouteSection({ route, onTeamClick }) {
+function RouteSection({ route, onTeamClick, favourites, onToggleFavourite }) {
   return (
     <section className="route-section">
       <div className="route-header">
@@ -267,6 +327,8 @@ function RouteSection({ route, onTeamClick }) {
             team={team}
             route={route}
             onClick={() => onTeamClick({ team, route })}
+            isFavourite={favourites.has(team.code)}
+            onToggleFavourite={onToggleFavourite}
           />
         ))}
       </div>
@@ -275,7 +337,7 @@ function RouteSection({ route, onTeamClick }) {
 }
 
 /* ===== TEAM CARD ===== */
-function TeamCard({ team, route, onClick }) {
+function TeamCard({ team, route, onClick, isFavourite, onToggleFavourite }) {
   const progressPct =
     team.totalCheckpoints > 0
       ? (team.progress / team.totalCheckpoints) * 100
@@ -297,10 +359,22 @@ function TeamCard({ team, route, onClick }) {
     RETIRED: 'Retired',
   }[team.status] || team.status;
 
+  const handleStarClick = (e) => {
+    e.stopPropagation();
+    onToggleFavourite(team.code);
+  };
+
   return (
-    <div className="team-card" onClick={onClick}>
+    <div className={`team-card ${isFavourite ? 'favourited' : ''}`} onClick={onClick}>
       <div className="team-card-top">
         <div className="team-info">
+          <button
+            className={`star-btn ${isFavourite ? 'active' : ''}`}
+            onClick={handleStarClick}
+            aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            {isFavourite ? '★' : '☆'}
+          </button>
           <span className="team-code-badge">{team.code}</span>
           <span className="team-name">{team.name}</span>
         </div>
@@ -330,7 +404,7 @@ function TeamCard({ team, route, onClick }) {
 }
 
 /* ===== TEAM DETAIL MODAL ===== */
-function TeamDetailModal({ team, route, onClose }) {
+function TeamDetailModal({ team, route, onClose, isFavourite, onToggleFavourite }) {
   // Close on escape
   useEffect(() => {
     const handler = (e) => {
@@ -377,7 +451,16 @@ function TeamDetailModal({ team, route, onClose }) {
 
         <div className="modal-header">
           <div>
-            <div className="modal-team-name">{team.name}</div>
+            <div className="modal-team-name">
+              <button
+                className={`star-btn modal-star ${isFavourite ? 'active' : ''}`}
+                onClick={() => onToggleFavourite(team.code)}
+                aria-label={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+              >
+                {isFavourite ? '★' : '☆'}
+              </button>
+              {team.name}
+            </div>
             <div className="modal-team-meta">
               <span className="team-code-badge">{team.code}</span>
               <span className="route-badge" style={{ width: 28, height: 28, fontSize: '0.8rem' }}>
